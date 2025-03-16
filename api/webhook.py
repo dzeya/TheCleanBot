@@ -6,6 +6,7 @@ import sys
 import logging
 from dotenv import load_dotenv
 import asyncio
+from telegram import Update
 
 # Add parent directory to path to import from bot.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,9 +30,12 @@ def setup_webhook():
     logger.info(f"Webhook setup response: {response.json()}")
     return response.json()
 
-# Add an async function to process updates
-async def process_update_async(update):
-    """Process the update asynchronously."""
+# Handling the update properly
+async def process_update_async(update_dict):
+    """Process the update asynchronously with proper conversion to Update object."""
+    # Convert the dictionary to an Update object
+    update = Update.de_json(update_dict, application.bot)
+    # Process the update
     await application.process_update(update)
     return "OK"
 
@@ -45,11 +49,17 @@ class handler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             
             # Parse the update from Telegram
-            update = json.loads(post_data.decode('utf-8'))
-            logger.info(f"Received update: {update}")
+            update_dict = json.loads(post_data.decode('utf-8'))
+            logger.info(f"Received update: {update_dict}")
             
-            # Process the update with our application using asyncio to run the coroutine
-            asyncio.run(process_update_async(update))
+            # Create a new event loop and run the coroutine
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(process_update_async(update_dict))
+                logger.info(f"Update processed: {result}")
+            finally:
+                loop.close()
             
             # Respond to Telegram
             self.send_response(200)
@@ -58,7 +68,7 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write("OK".encode())
             
         except Exception as e:
-            logger.error(f"Error processing update: {e}")
+            logger.error(f"Error processing update: {e}", exc_info=True)
             self.send_response(500)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
