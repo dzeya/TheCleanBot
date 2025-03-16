@@ -20,6 +20,12 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://the-clean-bot.vercel.app/api/bot-webhook")
 
+# Log token validation
+if not TOKEN:
+    logger.error("TELEGRAM_TOKEN is missing or empty!")
+else:
+    logger.info(f"TELEGRAM_TOKEN loaded: {TOKEN[:4]}...{TOKEN[-4:]}")
+
 def setup_webhook():
     """Set up the webhook with Telegram."""
     url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}"
@@ -35,7 +41,9 @@ def send_telegram_message(chat_id, text):
         "text": text
     }
     response = requests.post(url, json=data)
-    return response.json()
+    response_json = response.json()
+    logger.info(f"Send message response: {response_json}")
+    return response_json
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
