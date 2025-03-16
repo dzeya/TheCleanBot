@@ -1,3 +1,4 @@
+import requests
 from http.server import BaseHTTPRequestHandler
 import json
 import os
@@ -16,9 +17,23 @@ load_dotenv()
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Setup webhook
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://the-clean-bot.vercel.app/api/bot-webhook")
+
+def setup_webhook():
+    """Set up the webhook with Telegram."""
+    url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}"
+    response = requests.get(url)
+    logger.info(f"Webhook setup response: {response.json()}")
+    return response.json()
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
+            logger.info(f"Received POST request to path: {self.path}")
+            logger.info(f"Headers: {self.headers}")
+            
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
@@ -43,8 +58,14 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(f"Error: {str(e)}".encode())
     
     def do_GET(self):
-        # Simple health check
+        logger.info(f"Received GET request to path: {self.path}")
+        
+        # Set up webhook and return status
+        status = setup_webhook()
         self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-type', 'application/json')
         self.end_headers()
-        self.wfile.write("Telegram Bot Webhook is running!".encode()) 
+        self.wfile.write(json.dumps({
+            "status": "Telegram Bot Webhook is running!",
+            "webhook_setup": status
+        }).encode()) 
