@@ -5,6 +5,7 @@ import os
 import sys
 import logging
 from dotenv import load_dotenv
+import asyncio
 
 # Add parent directory to path to import from bot.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,6 +29,12 @@ def setup_webhook():
     logger.info(f"Webhook setup response: {response.json()}")
     return response.json()
 
+# Add an async function to process updates
+async def process_update_async(update):
+    """Process the update asynchronously."""
+    await application.process_update(update)
+    return "OK"
+
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
@@ -41,8 +48,8 @@ class handler(BaseHTTPRequestHandler):
             update = json.loads(post_data.decode('utf-8'))
             logger.info(f"Received update: {update}")
             
-            # Process the update with our application
-            application.process_update(update)
+            # Process the update with our application using asyncio to run the coroutine
+            asyncio.run(process_update_async(update))
             
             # Respond to Telegram
             self.send_response(200)
