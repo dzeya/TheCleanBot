@@ -5,12 +5,9 @@ import os
 import sys
 import logging
 from dotenv import load_dotenv
-import asyncio
-from telegram import Update
 
 # Add parent directory to path to import from bot.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from bot import application
 
 # Load environment variables
 load_dotenv()
@@ -30,14 +27,15 @@ def setup_webhook():
     logger.info(f"Webhook setup response: {response.json()}")
     return response.json()
 
-# Handling the update properly
-async def process_update_async(update_dict):
-    """Process the update asynchronously with proper conversion to Update object."""
-    # Convert the dictionary to an Update object
-    update = Update.de_json(update_dict, application.bot)
-    # Process the update
-    await application.process_update(update)
-    return "OK"
+def send_telegram_message(chat_id, text):
+    """Send a message to Telegram."""
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": text
+    }
+    response = requests.post(url, json=data)
+    return response.json()
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -49,19 +47,36 @@ class handler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             
             # Parse the update from Telegram
-            update_dict = json.loads(post_data.decode('utf-8'))
-            logger.info(f"Received update: {update_dict}")
+            update = json.loads(post_data.decode('utf-8'))
+            logger.info(f"Received update: {update}")
             
-            # Create a new event loop and run the coroutine
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(process_update_async(update_dict))
-                logger.info(f"Update processed: {result}")
-            finally:
-                loop.close()
+            # Process the update directly
+            if 'message' in update:
+                message = update['message']
+                chat_id = message['chat']['id']
+                
+                # Process commands
+                if 'text' in message:
+                    text = message['text']
+                    entities = message.get('entities', [])
+                    
+                    # Check for /start command
+                    is_command = False
+                    for entity in entities:
+                        if entity.get('type') == 'bot_command' and text.startswith('/start'):
+                            is_command = True
+                            send_telegram_message(chat_id, "Hello! Send me some text or a photo, and I'll respond with a message.")
+                            break
+                    
+                    # Handle regular text messages
+                    if not is_command and text:
+                        send_telegram_message(chat_id, f"You said: {text}")
+                
+                # Process photos
+                if 'photo' in message:
+                    send_telegram_message(chat_id, "You sent a photo! (In future, we'll analyze it and return data.)")
             
-            # Respond to Telegram
+            # Respond to Telegram with 200 OK
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
