@@ -7,5 +7,11 @@
   "routes": [
     { "src": "/api/webhook", "dest": "api/webhook.py" },
     { "src": "/api/bot-webhook", "dest": "api/bot-webhook.py" }
-  ]
+  ],
+  "build": {
+    "env": {
+      "PIP_TARGET": ".pip"
+    }
+  },
+  "installCommand": "pip install -r requirements.txt"
 } 
