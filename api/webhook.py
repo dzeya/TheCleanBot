@@ -4,13 +4,13 @@ import json
 import os
 import sys
 import logging
-from dotenv import load_dotenv
 
-# Add parent directory to path to import from bot.py
+# Add parent directory to path to import from bot.py and utils
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.environment import load_environment
 
-# Load environment variables
-load_dotenv()
+# Load environment variables based on environment
+env = load_environment()
 
 # Configure logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://the-clean-bot.vercel.app/api/bot-webhook")
 
-# Log token validation
+# Log environment and token validation
+logger.info(f"API running in {env} environment")
 if not TOKEN:
     logger.error("TELEGRAM_TOKEN is missing or empty!")
 else:
@@ -73,7 +74,7 @@ class handler(BaseHTTPRequestHandler):
                     for entity in entities:
                         if entity.get('type') == 'bot_command' and text.startswith('/start'):
                             is_command = True
-                            send_telegram_message(chat_id, "Hello! Send me some text or a photo, and I'll respond with a message.")
+                            send_telegram_message(chat_id, f"Hello! Send me some text or a photo, and I'll respond with a message. (Running in {env} environment)")
                             break
                     
                     # Handle regular text messages
@@ -106,6 +107,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.end_headers()
         self.wfile.write(json.dumps({
-            "status": "Telegram Bot Webhook is running!",
+            "status": f"Telegram Bot Webhook is running in {env} environment!",
             "webhook_setup": status
         }).encode()) 

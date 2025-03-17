@@ -2,16 +2,17 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 import os
 import logging
-from dotenv import load_dotenv
+from utils.environment import load_environment
 
-# Load environment variables
-load_dotenv()
+# Load environment variables based on environment
+env = load_environment()
 
 # Configure logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
+logger.info(f"Running in {env} environment with token: {TOKEN[:4]}...{TOKEN[-4:] if TOKEN else 'None'}")
 
 # Build the application (bot) - Set it up for webhook mode
 application = ApplicationBuilder().token(TOKEN).build()
