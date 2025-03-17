@@ -1,9 +1,17 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/webhook.py", "use": "@vercel/python" }
+    { "src": "api/webhook.py", "use": "@vercel/python" },
+    { "src": "api/bot-webhook.py", "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/api/bot-webhook", "dest": "api/webhook.py" }
-  ]
+    { "src": "/api/webhook", "dest": "api/webhook.py" },
+    { "src": "/api/bot-webhook", "dest": "api/bot-webhook.py" }
+  ],
+  "build": {
+    "env": {
+      "PIP_TARGET": ".pip"
+    }
+  },
+  "installCommand": "pip install -r requirements.txt"
 } 
