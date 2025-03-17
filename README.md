@@ -15,4 +15,8 @@ A cleaning service management application with user and admin interfaces.
 1. Create feature branches from `develop`
 2. Submit PRs to merge completed features into `develop`
 3. Test thoroughly in staging environment
-4. Periodically merge `develop` into `main` for production releases 
+4. Periodically merge `develop` into `main` for production releases
+
+## Development Notes
+
+- Force redeployment: 2025-03-17 
